@@ -283,7 +283,7 @@ function AES_GCM_encrypt ( data ) {
     return this;
 }
 
-function AES_GCM_Decrypt_process ( data ) {
+function AES_GCM_Decrypt_process ( data, onprogress ) {
     if ( is_string(data) )
         data = string_to_bytes(data);
 
@@ -310,6 +310,8 @@ function AES_GCM_Decrypt_process ( data ) {
         throw new RangeError("counter overflow");
 
     var result = new Uint8Array(rlen);
+    var progress_step = data.length / 100;
+    var progress_mark = data.length - progress_step;
 
     while ( dlen > tlen ) {
         wlen = _heap_write( heap, pos+len, data, dpos, dlen-tlen );
@@ -326,6 +328,11 @@ function AES_GCM_Decrypt_process ( data ) {
 
         pos = 0;
         len = 0;
+
+        if (onprogress && (dlen <= progress_mark)) {
+            onprogress((data.length - dlen) / data.length);
+            progress_mark -= progress_step;
+        }
     }
 
     if ( dlen > 0 ) {
@@ -396,8 +403,8 @@ function AES_GCM_Decrypt_finish () {
     return this;
 }
 
-function AES_GCM_decrypt ( data ) {
-    var result1 = AES_GCM_Decrypt_process.call( this, data ).result,
+function AES_GCM_decrypt ( data, onprogress ) {
+    var result1 = AES_GCM_Decrypt_process.call( this, data, onprogress ).result,
         result2 = AES_GCM_Decrypt_finish.call( this ).result;
 
     var result = new Uint8Array( result1.length + result2.length );
